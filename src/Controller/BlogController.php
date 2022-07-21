@@ -14,11 +14,15 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class BlogController extends AbstractController
 {
-
   #[Route('/', name: 'homepage')]
-  public function index(): Response
+  public function index( ManagerRegistry $doctrine): Response
   {
-    return $this->render("/blog/index.html.twig");
+    $articles= $doctrine->getRepository(Article::class)
+    ->findBy(
+      ["isPublished" => true],
+      ["publicationDate"=> "desc"]
+    );
+    return $this->render("/blog/index.html.twig", ["articles" => $articles]);
   }
 
   #[Route('/add', name: 'article_add')]
@@ -65,22 +69,54 @@ class BlogController extends AbstractController
   }
 
   #[Route('/show/{id}', name: 'article_show')]
-  public function show($id): Response
+  public function show(Article $article): Response
   {
     return $this->render("/blog/show.html.twig", [
-      "id" => $id
+      "article" => $article
     ]);
   }
 
   #[Route('/edit/{id}', name: 'article_edit')]
-  public function edit($id, ManagerRegistry $doctrine, Article $article): Response
+  public function edit($id, ManagerRegistry $doctrine, Article $article, Request $request): Response
   {
-    // "vieille méthod"e :récupérer l'article correspondant à l'id
-    // $article = $doctrine->getRepository(Article::class)->find($id);
+    $oldPicture = $article->getPicture();
 
     $form = $this->createForm(ArticleType::class, $article);
+    $form->handleRequest($request);
 
-    return $this->render("/blog/edit.html.twig", [
+    if ($form->isSubmitted() && $form->isValid()) {
+      $article->setLastUpdateDate(new DateTime());
+
+      if ($article->getIsPublished()) {
+        $article->setPublicationDate(new DateTime());
+      }
+
+      if ($article->getPicture() !== null && $article->getPicture() !== $oldPicture) {
+        $file = $form->get('picture')->getData();
+        $fileName = uniqid() . '.' . $file->guessExtension();
+
+        try {
+          $file->move(
+            $this->getParameter('images_directory'),
+            $fileName
+          );
+        } catch (FileException $e) {
+          return new Response($e->getMessage());
+        }
+
+        $article->setPicture($fileName);
+      } else {
+        $article->setPicture($oldPicture);
+      }
+
+      $em = $doctrine->getManager();
+      $em->persist($article);
+      $em->flush();
+
+      return new Response("L'article a bien été modifieé.");
+    }
+
+    return $this->render("blog/edit.html.twig", [
       "article" => $article,
       "form" => $form->createView()
     ]);

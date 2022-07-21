@@ -5,6 +5,11 @@
 {% block content %}
   <section class="container pt-3">
     <h4 class="mb-3">Éditer l'article {{ article.title }}</h4>
+
+{% if article.picture is not null %}
+        <img src="{{ asset('uploads/' ~ article.picture) }}" width="300">
+      {% endif %}
+
     <div class="row">
       {% include "includes/article_form.html.twig" %}
     </div>
