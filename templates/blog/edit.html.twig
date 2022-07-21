@@ -1,0 +1,13 @@
+{% extends "base.html.twig" %}
+
+{% block title %}Éditer | {{ parent() }}{% endblock %}
+
+{% block content %}
+  <section class="container pt-3">
+    <h4 class="mb-3">Éditer l'article {{ article.title }}</h4>
+    <div class="row">
+      {% include "includes/article_form.html.twig" %}
+    </div>
+  </section>
+{% endblock %}
+
