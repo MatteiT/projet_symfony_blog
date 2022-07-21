@@ -3,15 +3,11 @@
 {% block title %}Register{% endblock %}
 
 {% block content %}
-    <h1>Register</h1>
+  <section class="container pt-3">
+    <h1 class="mb-3">Inscription</h1>
+    <div class="row">
+      {{ form(registrationForm) }}
+    </div>
+  </section>
 
-    {{ form_start(registrationForm) }}
-        {{ form_row(registrationForm.email) }}
-        {{ form_row(registrationForm.plainPassword, {
-            label: 'Password'
-        }) }}
-        {{ form_row(registrationForm.agreeTerms) }}
-
-        <button type="submit" class="btn">Register</button>
-    {{ form_end(registrationForm) }}
 {% endblock %}
