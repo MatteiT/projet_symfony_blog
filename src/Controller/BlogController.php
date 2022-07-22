@@ -131,13 +131,14 @@ class BlogController extends AbstractController
 
   #[IsGranted("ROLE_ADMIN")]
   #[Route('/remove/{id}', name: 'article_remove')]
-  public function remove($id, ManagerRegistry $doctrice): Response
+  public function remove($id, ManagerRegistry $doctrine): Response
   {
-    $em= $doctrice->getManager();
+    $em = $doctrine->getManager();
     $article = $em->getRepository(Article::class)->find($id);
     $em->remove($article);
     $em->flush();
-    return $this->redirect("admin");
+
+    return $this->redirectToRoute("admin");
   }
 
   #[Route('/admin', name: 'admin')]

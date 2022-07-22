@@ -21,8 +21,8 @@ class Article
   #[ORM\ManyToMany(targetEntity: "App\Entity\Category", inversedBy: "articles")]
   private $categories;
 
-  #[ORM\Column(length: 255)]
-  private ?string $picture = null;
+  #[ORM\Column(length: 255, nullable: true)]
+  private ?string $picture ;
 
   #[ORM\Column(length: 255)]
   #[Assert\NotBlank(message: "Ce champ ne peut pas être vide")]
