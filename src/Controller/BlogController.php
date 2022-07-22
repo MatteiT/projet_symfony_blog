@@ -2,32 +2,38 @@
 
 namespace App\Controller;
 
+use DateTime;
+use App\Entity\User;
 use App\Entity\Article;
 use App\Form\ArticleType;
-use DateTime;
 use Doctrine\Persistence\ManagerRegistry;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\File\Exception\FileException;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\File\Exception\FileException;
 
 class BlogController extends AbstractController
 {
   #[Route('/', name: 'homepage')]
-  public function index( ManagerRegistry $doctrine): Response
+  public function index(ManagerRegistry $doctrine): Response
   {
-    $articles= $doctrine->getRepository(Article::class)
-    ->findBy(
+    $articles = $doctrine->getRepository(Article::class)->findBy(
       ["isPublished" => true],
-      ["publicationDate"=> "desc"]
+      ["publicationDate" => "desc"],
     );
-    return $this->render("/blog/index.html.twig", ["articles" => $articles]);
+
+    return $this->render("/blog/index.html.twig", [
+      "articles" => $articles
+    ]);
   }
 
   #[Route('/add', name: 'article_add')]
   public function add(Request $request, ManagerRegistry $doctrine): Response
   {
+    $this->denyAccessUnlessGranted("ROLE_ADMIN");
+
     $article = new Article();
     $form = $this->createForm(ArticleType::class, $article);
 
@@ -76,8 +82,9 @@ class BlogController extends AbstractController
     ]);
   }
 
+  #[IsGranted("ROLE_ADMIN")]
   #[Route('/edit/{id}', name: 'article_edit')]
-  public function edit($id, ManagerRegistry $doctrine, Article $article, Request $request): Response
+  public function edit(ManagerRegistry $doctrine, Article $article, Request $request): Response
   {
     $oldPicture = $article->getPicture();
 
@@ -122,9 +129,30 @@ class BlogController extends AbstractController
     ]);
   }
 
+  #[IsGranted("ROLE_ADMIN")]
   #[Route('/remove/{id}', name: 'article_remove')]
-  public function remove($id): Response
+  public function remove($id, ManagerRegistry $doctrice): Response
   {
-    return new Response("<h1>Suppression de l'article $id</h1>");
+    $em= $doctrice->getManager();
+    $article = $em->getRepository(Article::class)->find($id);
+    $em->remove($article);
+    $em->flush();
+    return $this->redirect("admin");
+  }
+
+  #[Route('/admin', name: 'admin')]
+  public function admin(ManagerRegistry $doctrine): Response
+  {
+    $articles = $doctrine->getRepository(Article::class)->findBy(
+      [],
+      ["lastUpdateDate" => "DESC"]
+    );
+
+    $users = $doctrine->getRepository(User::class)->findAll();
+
+    return $this->render("admin/index.html.twig", [
+      "articles" => $articles,
+      "users" => $users
+    ]);
   }
 }
